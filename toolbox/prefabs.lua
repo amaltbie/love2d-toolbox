@@ -149,6 +149,35 @@ function prefabs.Button(x, y, text, font, defaultColor, selectedColor, clickedCo
   return e
 end
 
+-- Takes in a string of text possibly containing variables
+-- and subsitutes them with data from the vars if possible
+function template(text, vars)
+  if text == nil then
+    return ""
+  end
+  if type(text) == "function" then
+    text = text(vars)
+  end
+  return (text:gsub(
+    '(%b{})',
+    function(var)
+      word = var:sub(2,-2)
+      local result = vars
+      if string.find(word, '.') then
+        for w in string.gmatch(word, "%w+") do
+          if result[w] then
+            result = result[w]
+          else
+            return "na"
+          end
+        end
+      else
+        result = vars[w]
+      end
+      return result
+    end))
+end
+
 function prefabs.textbox(text,x,y,w,h)
   local e = Concord.entity()
   e.text = text
