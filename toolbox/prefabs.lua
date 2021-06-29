@@ -1,5 +1,7 @@
 local Concord = require 'concord'
-local world = ".world"
+local PATH = (...):gsub('%.prefabs$', '')
+local world = require(PATH..".world")
+local resources = require(PATH..".resources")
 
 
 -- Contains functions for prefab entity types
@@ -88,11 +90,11 @@ function prefabs.Button(x, y, text, font, defaultColor, selectedColor, clickedCo
   e.clicked = false
   e.text = text
   e.font = font
-  e.enabled = True
+  e.enabled = true
   e.defaultTextImg = love.graphics.newText(e.font, {defaultColor, e.text})
   e.selectedTextImg = love.graphics.newText(e.font, {selectedColor, e.text})
   e.clickedTextImg = love.graphics.newText(e.font, {clickedColor, e.text})
-  e.disabledTextImg = love.graphics.newText(e.font, {{.2,.3,.3,.1}, e.text)
+  e.disabledTextImg = love.graphics.newText(e.font, {{.2,.3,.3,.1}, e.text})
   e.textImg = e.defaultTextImg
   e.onClick = onClick
   e:give("physics",
@@ -144,6 +146,131 @@ function prefabs.Button(x, y, text, font, defaultColor, selectedColor, clickedCo
       this.physics.body:getY()-this.textImg:getHeight()/2
     )
   end)
+  return e
+end
+
+function prefabs.textbox(text,x,y,w,h)
+  local e = Concord.entity()
+  e.text = text
+  e.original_text = text
+  e.w = w
+  e.h = h
+  e.buffer_w = 20
+  e.buffer_h = 10
+  e.text_w = e.w - e.buffer_w * 2
+  e.text_h = e.h - e.buffer_h * 2
+  e.font = resources.fonts.basis33
+  function e:update_text(data)
+    self.text = template(self.original_text, data)
+    self.max_lines = math.floor(e.text_h / e.font:getHeight())
+    self.text_words = string.gmatch(e.text, '[^%s]+')
+    self.text_parts = {}
+    self.text_index = 1
+    local idx = 1
+    local line_length = 0
+    for word in self.text_words do
+      if self.text_parts[idx] ~= nil then
+        line_width, lines = e.font:getWrap(e.text_parts[idx] .. ' ' .. word, self.text_w)
+        if table.getn(lines) > self.max_lines then
+          idx = idx + 1
+        end
+      end
+      if self.text_parts[idx] == nil then
+        self.text_parts[idx] = word
+      else
+        self.text_parts[idx] = self.text_parts[idx] .. ' ' .. word
+      end
+    end
+  end
+  e:update_text({})
+  e:give("position",x,y,0)
+  e:give("graphics",function(this)
+    local width = love.graphics.getFont():getWidth(this.text)
+    love.graphics.rectangle("line",this.position.x,this.position.y,this.w,this.h)
+    love.graphics.setFont(this.font)
+    love.graphics.printf(
+      this.text_parts[e.text_index],
+      this.position.x + this.buffer_w,
+      this.position.y + this.buffer_h,
+      this.text_w)
+  end)
+
+  e.button = prefabs.Button(
+    x + e.w - e.buffer_w/2,
+    y + e.h - e.buffer_h,
+    ">",
+    e.font,
+    {1,1,1,1},
+    {1,0,0,1},
+    {1,0,0,1},
+    function(this)
+      e.text_index = e.text_index + 1
+      if e.text_index > table.getn(e.text_parts) then
+        e:destroy()
+        this:destroy()
+      end
+    end
+  )
+  e:give("init",function(this)
+    print(this.button.position.y)
+    world:addEntity(this.button)
+  end)
+
+  return e
+end
+
+function prefabs.promptbox(prompt,choices,x,y,w,h)
+  local e = Concord.entity()
+  e.x = x
+  e.y = y
+  e.w = w
+  e.h = h
+  e.prompt = prompt
+  e.original_prompt = prompt
+  e.choices = choices
+  e.buttons = {}
+  e.font = resources.fonts.basis33
+  function e:update_text(data)
+    self.prompt = template(self.original_prompt, data)
+  end
+  e:give("init",function(this)
+    e:update_text({})
+    local center_x = e.x + e.w/2
+    local center_y = e.y + e.h/2
+    for i, choice in ipairs(choices) do
+      local prompt_text_width = e.font:getWidth(choice.text)
+      local button = prefabs.Button(
+        center_x,
+        center_y + 25 * (i - 1),
+        choice.text,
+        e.font,
+        {1,1,1,1},
+        {1,0,0,1},
+        {1,0,0,1},
+        function (this)
+          choice.callback(this)
+          if this.exit then
+            this.box._destroy()
+          end
+        end)
+      button.box = e
+      button.exit = choice.exit == nil and true or choice.exit
+      table.insert(e.buttons, button)
+      world:addEntity(button)
+    end
+  end)
+  e:give("position",x,y,0)
+  e:give("graphics",function(this)
+    love.graphics.rectangle("line",e.position.x,e.position.y,e.w,e.h)
+    love.graphics.setFont(e.font)
+    love.graphics.print(this.prompt,this.x+20,this.y+20)
+  end)
+  e._destroy = function()
+    for _, button in ipairs(e.buttons) do
+      button:destroy()
+    end
+    e:destroy()
+  end
   return e
 end
 
