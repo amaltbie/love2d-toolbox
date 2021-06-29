@@ -1,5 +1,4 @@
 local Concord = require 'concord'
--- local world   = require 'world'
 local world = ".world"
 
 

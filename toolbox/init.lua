@@ -19,5 +19,6 @@ toolbox.world = require(PATH..".world")
 toolbox.resources = require(PATH..".resources")
 toolbox.prefabs = require(PATH..".prefabs")
 toolbox.math = require(PATH..".math")
+require(PATH..".components")
 
 return toolbox
