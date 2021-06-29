@@ -82,16 +82,17 @@ function prefabs.Box(x,y,z,color,body_type,width,height)
   return e
 end
 
-function prefabs.Button(mouse_ctrl, x, y, text, font, defaultColor, selectedColor, clickedColor, onClick)
+function prefabs.Button(x, y, text, font, defaultColor, selectedColor, clickedColor, onClick)
   local e = Concord.entity()
-  e.mouse_ctrl = mouse_ctrl
   e.selected = false
   e.clicked = false
   e.text = text
   e.font = font
+  e.enabled = True
   e.defaultTextImg = love.graphics.newText(e.font, {defaultColor, e.text})
   e.selectedTextImg = love.graphics.newText(e.font, {selectedColor, e.text})
   e.clickedTextImg = love.graphics.newText(e.font, {clickedColor, e.text})
+  e.disabledTextImg = love.graphics.newText(e.font, {{.2,.3,.3,.1}, e.text)
   e.textImg = e.defaultTextImg
   e.onClick = onClick
   e:give("physics",
@@ -101,32 +102,38 @@ function prefabs.Button(mouse_ctrl, x, y, text, font, defaultColor, selectedColo
     true
   )
   e:give("beginContactCallback",function(this, other, collision)
-    if other == this.mouse_ctrl then
+    if other == world.mouse and this.enabled then
+      print(this.text.." selected")
       this.selected = true
       this.textImg = this.selectedTextImg
     end
   end)
   e:give("endContactCallback",function(this, other, collision)
-    if other == mouse_ctrl then
+    if other == world.mouse and this.enabled then
+      print(this.text.." deselected")
       this.selected = false
       this.textImg = this.defaultTextImg
     end
   end)
   e:give("update",function(this, dt)
-    if love.mouse.isDown(1) then
-      if this.selected then
-        this.clicked = true
-        this.textImg = this.clickedTextImg
+    if this.enabled then
+      if love.mouse.isDown(1) then
+        if this.selected then
+          this.clicked = true
+          this.textImg = this.clickedTextImg
+        else
+          this.textImg = this.defaultTextImg
+          this.clicked = false
+        end
       else
-        this.textImg = this.defaultTextImg
-        this.clicked = false
+        if this.clicked then
+          this.onClick(this)
+          this.clicked = false
+          this.textImg = this.defaultTextImg
+        end
       end
     else
-      if this.clicked then
-        this.onClick(this)
-        this.clicked = false
-        this.textImg = this.defaultTextImg
-      end
+      this.textImg = this.disabledTextImg
     end
   end)
   e:give("position",x,y,100)
@@ -139,37 +146,5 @@ function prefabs.Button(mouse_ctrl, x, y, text, font, defaultColor, selectedColo
   end)
   return e
 end
-
-prefabs.mouse = Concord.entity()
-prefabs.mouse.width = 32
-prefabs.mouse.height = 32
-prefabs.mouse.isDownImage = nil
-prefabs.mouse.isUpImage = nil
-
-function prefabs.mouse.setIsDownImage(image_filepath)
-  prefabs.mouse.isDownImage = love.mouse.newCursor(image_filepath)
-end
-
-function prefabs.mouse.setIsUpImage(image_filepath)
-  prefabs.mouse.isUpImage = love.mouse.newCursor(image_filepath)
-end
-
-prefabs.mouse:give("physics", prefabs.mouse, love.mouse.getX(),love.mouse.getY(),love.physics.newRectangleShape(32, 32),"dynamic",true)
-prefabs.mouse:give("update", function(this, dt)
-  if love.mouse.isDown(1) then
-    if prefabs.mouse.isDownImage then
-      love.mouse.setCursor(prefabs.mouse.isDownImage)
-    end
-  else
-    if prefabs.mouse.isUpImage then
-      love.mouse.setCursor(prefabs.mouse.isUpImage)
-    end
-  end
-  this.physics.body:setPosition(love.mouse.getX() + this.width/2,love.mouse.getY() + this.height/2)
-end)
-prefabs.mouse:give("position", love.mouse.getX(),love.mouse.getY(), 100)
-prefabs.mouse.id = "mouse"
-prefabs.mouse.physics.fixture:setSensor(true)
-prefabs.mouse.holding = false
 
 return prefabs

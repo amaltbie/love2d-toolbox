@@ -10,6 +10,19 @@ local Concord = require 'concord'
 -- Initialize world object
 local world = Concord.world()
 
+
+-- Component for an initialization function
+Concord.component("init", function(c, _run)
+  c.run = _run
+end)
+
+-- If entity has the init component then run its init function
+function world:onEntityAdded(e)
+  if e:has("init") then
+    e.init.run(e)
+  end
+end
+
 -- Position in world
 Concord.component("position", function(c, x, y, z)
   c.x = x or 0
@@ -24,6 +37,7 @@ end
 -- Generic graphics component for custome draw callback
 Concord.component("graphics", function(c, _render)
   c.render = _render
+  c.visible = true
 end)
 
 local DrawSystem = Concord.system({
@@ -36,8 +50,10 @@ function DrawSystem:draw()
     return e1.position.z < e2.position.z
   end)
   for _, e in ipairs(sorted_pool) do
-    e.graphics.render(e)
-    love.graphics.reset()
+    if e.graphics.visible then
+      e.graphics.render(e)
+      love.graphics.reset()
+    end
   end
 end
 
@@ -139,5 +155,41 @@ physics_world:setCallbacks(
 )
 
 world:addSystems(PhysicsSystem)
+
+world.mouse = Concord.entity()
+world.mouse.width = .5
+world.mouse.height = .5
+world.mouse.isDownImage = nil
+world.mouse.isUpImage = nil
+
+function world.mouse.setIsDownImage(image_filepath)
+  world.mouse.isDownImage = love.mouse.newCursor(image_filepath)
+end
+
+function world.mouse.setIsUpImage(image_filepath)
+  world.mouse.isUpImage = love.mouse.newCursor(image_filepath)
+end
+
+world.mouse:give("physics", world.mouse, love.mouse.getX(),love.mouse.getY(),love.physics.newRectangleShape(world.mouse.width, world.mouse.height),"dynamic",true)
+world.mouse:give("update", function(this, dt)
+  if love.mouse.isDown(1) then
+    if world.mouse.isDownImage then
+      love.mouse.setCursor(world.mouse.isDownImage)
+    end
+  else
+    if world.mouse.isUpImage then
+      love.mouse.setCursor(world.mouse.isUpImage)
+    end
+  end
+  this.physics.body:setPosition(love.mouse.getX(),love.mouse.getY())
+end)
+world.mouse:give("position", love.mouse.getX(),love.mouse.getY(), 100)
+-- world.mouse:give("graphics", function(this)
+--   love.graphics.setColor(1,1,1,1)
+--   love.graphics.rectangle("fill",this.physics.body:getX()-this.width/2,this.physics.body:getY()-this.height/2,this.width,this.height)
+-- end)
+world.mouse.id = "mouse"
+world.mouse.physics.fixture:setSensor(true)
+world.mouse.holding = false
 
 return world
