@@ -59,6 +59,25 @@ end
 
 world:addSystems(DrawSystem)
 
+-- callback for mousepressed event
+for _, mouse_event_type in ipairs({"mousepressed","mousereleased","mouseclicked"}) do
+  Concord.component(mouse_event_type, function(c, callback)
+    c.callback = callback
+  end)
+
+  local mouse_event_system = Concord.system({
+    pool = {mouse_event_type}
+  })
+
+  mouse_event_system[mouse_event_type] = function (self,x,y,button,istouch,presses)
+    for _, e in ipairs(self.pool) do
+      e.mousepressed.callback(e,x,y,button,istouch,presses)
+    end
+  end
+
+  world:addSystems(mouse_event_system)
+end
+
 local cleanUpSystem = Concord.system({
   pool = {"position"}
 })
@@ -191,5 +210,6 @@ world.mouse:give("position", love.mouse.getX(),love.mouse.getY(), 100)
 world.mouse.id = "mouse"
 world.mouse.physics.fixture:setSensor(true)
 world.mouse.holding = false
+world:addEntity(world.mouse)
 
 return world

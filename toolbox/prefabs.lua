@@ -212,10 +212,14 @@ function prefabs.textbox(text,x,y,w,h)
     end
   end
   e:update_text({})
-  e:give("position",x,y,0)
+  e:give("position",x,y,10)
   e:give("graphics",function(this)
     local width = love.graphics.getFont():getWidth(this.text)
+    love.graphics.setColor(0,0,0,1)
+    love.graphics.rectangle("fill",this.position.x,this.position.y,this.w,this.h)
+    love.graphics.setColor(1,1,1,1)
     love.graphics.rectangle("line",this.position.x,this.position.y,this.w,this.h)
+    love.graphics.rectangle("line",this.position.x + 4,this.position.y + 4,this.w - 8,this.h - 8)
     love.graphics.setFont(this.font)
     love.graphics.printf(
       this.text_parts[e.text_index],
@@ -263,16 +267,16 @@ function prefabs.promptbox(prompt,choices,x,y,w,h)
     self.prompt = template(self.original_prompt, data)
   end
   e:give("init",function(this)
-    e:update_text({})
-    local center_x = e.x + e.w/2
-    local center_y = e.y + e.h/2
+    this:update_text({})
+    local center_x = this.x + this.w/2
+    local center_y = this.y + this.h/2
     for i, choice in ipairs(choices) do
-      local prompt_text_width = e.font:getWidth(choice.text)
+      local prompt_text_width = this.font:getWidth(choice.text)
       local button = prefabs.Button(
         center_x,
         center_y + 25 * (i - 1),
         choice.text,
-        e.font,
+        this.font,
         {1,1,1,1},
         {1,0,0,1},
         {1,0,0,1},
@@ -284,14 +288,17 @@ function prefabs.promptbox(prompt,choices,x,y,w,h)
         end)
       button.box = e
       button.exit = choice.exit == nil and true or choice.exit
-      table.insert(e.buttons, button)
+      table.insert(this.buttons, button)
       world:addEntity(button)
     end
   end)
-  e:give("position",x,y,0)
+  e:give("position",x,y,20)
   e:give("graphics",function(this)
-    love.graphics.rectangle("line",e.position.x,e.position.y,e.w,e.h)
-    love.graphics.setFont(e.font)
+    love.graphics.setColor(0,0,0,1)
+    love.graphics.rectangle("fill",this.position.x,this.position.y,this.w,this.h)
+    love.graphics.setColor(1,1,1,1)
+    love.graphics.rectangle("line",this.position.x,this.position.y,this.w,this.h)
+    love.graphics.setFont(this.font)
     love.graphics.print(this.prompt,this.x+20,this.y+20)
   end)
   e._destroy = function()
