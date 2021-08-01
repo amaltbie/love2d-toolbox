@@ -34,6 +34,18 @@ function z_compare(e1, e2)
   return e1.position.z < e2.position.z
 end
 
+Concord.component("effect", function(c, shader_code, data)
+  c.shader = love.graphics.newShader(shader_code)
+  c.data = {}
+  function c:setData(key, value)
+    self.data[key] = value
+    self.shader:send(key, value)
+  end
+  for k,v in pairs(data or {}) do
+    c:setData(k, v)
+  end
+end)
+
 -- Generic graphics component for custome draw callback
 Concord.component("graphics", function(c, _render)
   c.render = _render
@@ -52,6 +64,9 @@ function DrawSystem:draw()
   end)
   for _, e in ipairs(sorted_pool) do
     if e.graphics.visible then
+      if e:has("effect") then
+        love.graphics.setShader(e.effect.shader) 
+      end
       e.graphics.render(e)
       love.graphics.reset()
     end
