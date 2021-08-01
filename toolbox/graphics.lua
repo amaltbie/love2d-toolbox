@@ -5,15 +5,14 @@ local Concord = require 'concord'
 
 local graphics = {}
 
-Concord.component("animation",function(c,filename,width,height,rotate,speed)
+Concord.component("animation",function(c,filename,width,height,rotate,speed,scale)
    c.image = love.graphics.newImage(filename)
    c.frame_count = c.image:getWidth() / width
    c.current_frame_index = 0
    c.framequads = {}
    c.rotate = rotate
    c.speed = speed
-   c.scale_x = 2
-   c.scale_y = 2
+   c.scale = scale
    for i=0,c.frame_count - 1 do
       c.framequads[i] = love.graphics.newQuad(
          i*width,
@@ -29,8 +28,8 @@ Concord.component("animation",function(c,filename,width,height,rotate,speed)
          this.position.x,
          this.position.y,
          this.animation.rotate - math.pi/2,
-         this.animation.scale_x,
-         this.animation.scale_y)
+         this.animation.scale,
+         this.animation.scale)
       this.animation.current_frame_index = (this.animation.current_frame_index + this.animation.speed) % this.animation.frame_count
    end
 end)
