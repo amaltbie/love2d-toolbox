@@ -45,7 +45,8 @@ local DrawSystem = Concord.system({
 })
 
 function DrawSystem:draw()
-  local sorted_pool = {unpack(self.pool)}
+  local sorted_pool = {}
+  for i,e in ipairs(self.pool) do sorted_pool[i] = e end
   table.sort(sorted_pool, function(e1,e2)
     return e1.position.z < e2.position.z
   end)
