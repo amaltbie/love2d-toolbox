@@ -87,12 +87,20 @@ for _, mouse_event_type in ipairs({"mousepressed","mousereleased","mouseclicked"
 
   mouse_event_system[mouse_event_type] = function (self,x,y,button,istouch,presses)
     for _, e in ipairs(self.pool) do
-      e.mousepressed.callback(e,x,y,button,istouch,presses)
+      e[mouse_event_type].callback(e,x,y,button,istouch,presses)
     end
+  end
+
+  love[mouse_event_type] = function(x,y,button,istouch,presses)
+    world:emit(mouse_event_type,x,y,button,istouch,presses)
   end
 
   world:addSystems(mouse_event_system)
 end
+
+Concord.component("mouseover",function(c,_callback)
+  c.callback = _callback
+end)
 
 local cleanUpSystem = Concord.system({
   pool = {"position"}
@@ -123,9 +131,9 @@ world.UpdateSystem = Concord.system({
 world.game_over = false
 
 function world.UpdateSystem:update(dt)
-    for _, e in ipairs(self.pool) do
-      e.update.run(e, dt)
-    end
+  for _, e in ipairs(self.pool) do
+    e.update.run(e, dt)
+  end
 end
 
 world:addSystems(world.UpdateSystem)
@@ -179,6 +187,12 @@ function genericPhysicsCallback(cb_comp_class)
     local entity_a,entity_b = a:getUserData(), b:getUserData()
     entityCallback(entity_a, entity_b, coll, cb_comp_class)
     entityCallback(entity_b, entity_a, coll, cb_comp_class)
+    if entity_a == world.mouse or entity_b == world.mouse then
+      local other = entity_a == world.mouse and entity_b or entity_a
+      if other:has("mouseover") then
+        other.mouseover.callback(other)
+      end
+    end
   end
 end
 
@@ -205,7 +219,13 @@ function world.mouse.setIsUpImage(image_filepath)
   world.mouse.isUpImage = love.mouse.newCursor(image_filepath)
 end
 
-world.mouse:give("physics", world.mouse, love.mouse.getX(),love.mouse.getY(),love.physics.newRectangleShape(world.mouse.width, world.mouse.height),"dynamic",true)
+world.mouse:give("physics",
+  world.mouse,
+  love.mouse.getX(),
+  love.mouse.getY(),
+  love.physics.newRectangleShape(world.mouse.width, world.mouse.height),
+  "dynamic",
+  true)
 world.mouse:give("update", function(this, dt)
   if love.mouse.isDown(1) then
     if world.mouse.isDownImage then
