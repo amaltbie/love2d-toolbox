@@ -23,6 +23,12 @@ function world:onEntityAdded(e)
   end
 end
 
+function world:onEntityRemoved(e)
+  if e:has("physics") then
+    e.physics.body:destroy()
+  end
+end
+
 -- Position in world
 Concord.component("position", function(c, x, y, z)
   c.x = x or 0
@@ -143,12 +149,12 @@ world:addSystems(world.UpdateSystem)
 local physics_scale = 64
 local world_gravity = 627.84 -- 9.81 * 64
 love.physics.setMeter(physics_scale)
-local physics_world = love.physics.newWorld(0, world_gravity, false)
+world.physics_world = love.physics.newWorld(0, world_gravity, false)
 
 Concord.component("physics", function(c, e, x, y, shape, body_type, sensor)
   body_type = body_type or "static"
   c.shape = shape
-  c.body = love.physics.newBody(physics_world, x, y, body_type)
+  c.body = love.physics.newBody(world.physics_world, x, y, body_type)
   c.body:setSleepingAllowed(false)
   c.fixture = love.physics.newFixture(c.body, c.shape, 1)
   c.fixture:setUserData(e)
@@ -163,7 +169,7 @@ local PhysicsSystem = Concord.system({
 })
 
 function PhysicsSystem:physics_update(dt)
-  physics_world:update(dt)
+  world.physics_world:update(dt)
 end
 
 physCallbackInit = function(c, _callback)
@@ -196,7 +202,7 @@ function genericPhysicsCallback(cb_comp_class)
   end
 end
 
-physics_world:setCallbacks(
+world.physics_world:setCallbacks(
   genericPhysicsCallback("beginContactCallback"),
   genericPhysicsCallback("endContactCallback"),
   genericPhysicsCallback("preSolveCallback"),
@@ -244,8 +250,6 @@ world.mouse:give("position", love.mouse.getX(),love.mouse.getY(), 100)
 --   love.graphics.rectangle("fill",this.physics.body:getX()-this.width/2,this.physics.body:getY()-this.height/2,this.width,this.height)
 -- end)
 world.mouse.id = "mouse"
-world.mouse.physics.fixture:setSensor(true)
-world.mouse.holding = false
 world:addEntity(world.mouse)
 
 return world

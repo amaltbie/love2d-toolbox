@@ -84,6 +84,18 @@ function _math.vec2(x, y)
     return _math.vec2(math.floor(self.x),math.floor(self.y))
   end
 
+  function t:rotate(a)
+    return _math.vec2(
+      math.cos(a) * self.x - math.sin(a) * self.y,
+      math.sin(a) * self.x + math.cos(a) * self.y)
+  end
+
+  function t:angle()
+    local a = math.atan2(self.y, self.x)
+    if a < 0 then a = 2 * PI + a end
+    return a
+  end
+
   return t
 end
 
