@@ -1,5 +1,5 @@
 ---
--- @module toolbox.prefabs
+-- @module toolbox.math
 
 local _math = {}
 
