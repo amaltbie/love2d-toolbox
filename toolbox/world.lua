@@ -45,7 +45,9 @@ Concord.component("effect", function(c, shader_code, data)
   c.data = {}
   function c:setData(key, value)
     self.data[key] = value
-    self.shader:send(key, value)
+    if self.shader:hasUniform(key) then
+      self.shader:send(key, value)
+    end
   end
   for k,v in pairs(data or {}) do
     c:setData(k, v)
