@@ -132,8 +132,21 @@ Concord.component("update", function(c, _run)
   c.run = _run
 end)
 
+-- Timed update system to be tied to update system
+-- rate means run every "rate" seconds
+-- mostly used for spawning
+Concord.component("timed_update", function(c, rate, _run)
+  c.timer = 0
+  c.rate = rate
+  c.run = _run
+end)
+
 world.UpdateSystem = Concord.system({
   pool = {"update"}
+})
+
+world.TimedUpdateSystem = Concord.system({
+  pool = {"timed_update"}
 })
 
 world.game_over = false
@@ -144,7 +157,18 @@ function world.UpdateSystem:update(dt)
   end
 end
 
+function world.TimedUpdateSystem:timed_update(dt)
+  for _, e in ipairs(self.pool) do
+    e.timed_update.timer = e.timed_update.timer + dt
+    if e.timed_update.timer > e.timed_update.rate then
+      e.timed_update.run(e)
+      e.timed_update.timer = 0
+    end
+  end
+end
+
 world:addSystems(world.UpdateSystem)
+world:addSystems(world.TimedUpdateSystem)
 
 
 -- Physics component
@@ -253,5 +277,12 @@ world.mouse:give("position", love.mouse.getX(),love.mouse.getY(), 100)
 -- end)
 world.mouse.id = "mouse"
 world:addEntity(world.mouse)
+
+-- To be inserted into love.update
+function world.update(dt)
+  world:emit("physics_update", dt)
+  world:emit("update", dt)
+  world:emit("timed_update", dt)
+end
 
 return world
